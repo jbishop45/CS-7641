@@ -1,3 +1,4 @@
+__pycache__/
+*.py[cod]
 MacParland.pdf
 paper_overviews.pptx
-__pycache__
