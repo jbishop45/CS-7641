@@ -83,9 +83,9 @@ class dlnet:
             alpha: the slope coefficent of the negative part.
         return: Leaky_Relu(u) 
         '''
-        # TODO: IMPLEMENT THIS METHOD
-
-        raise NotImplementedError
+        v = np.copy(u)
+        v[v <= 0] *= alpha
+        return v
         
 
     def Tanh(self, u):
@@ -96,9 +96,8 @@ class dlnet:
         Input: u of any dimension
         return: Tanh(u) 
         '''
-        # TODO: IMPLEMENT THIS METHOD
-
-        raise NotImplementedError
+        v = np.copy(u)
+        return np.divide(np.exp(v)-np.exp(-1*v), np.exp(v)+np.exp(-1*v))
     
     
     def dL_Relu(self,alpha, u):
@@ -130,9 +129,7 @@ class dlnet:
 
         return: MSE 1x1: loss value 
         '''
-        # TODO: IMPLEMENT THIS METHOD
-
-        raise NotImplementedError
+        return 1/(2*y.shape[1]) * np.sum((y-yh)**2)
 
 
     @staticmethod
@@ -143,9 +140,9 @@ class dlnet:
         return: u_after_dropout D x N
                 dropout_mask DxN
         '''
-        # TODO: IMPLEMENT THIS METHOD
-        
-        raise NotImplementedError
+        drop_mask = np.random.choice([0,1], size=u.shape, p =[prob,1-prob])
+        v = np.where(drop_mask,u/(1-prob),0)
+        return v, drop_mask
 
 
     def forward(self, x, use_dropout=True):
@@ -159,21 +156,19 @@ class dlnet:
                use_dropout: True if using dropout in forward
         return: o2 1xN
         '''  
-        # TODO: IMPLEMENT THIS METHOD
-
         self.ch['X'] = x #keep
         
-        u1 = None # IMPLEMENT THIS LINE
-        o1 = None # IMPLEMENT THIS LINE
+        u1 = self.param['theta1']@x + self.param['b1'] # IMPLEMENT THIS LINE
+        o1 = self.Leaky_Relu(self.alpha,u1) # IMPLEMENT THIS LINE
 
         if use_dropout:
-            o1, dropout_mask = None # IMPLEMENT THIS LINE
+            o1, dropout_mask = self._dropout(o1, self.dropout_prob) # IMPLEMENT THIS LINE
             self.ch['u1'], self.ch['mask'], self.ch['o1'] = u1, dropout_mask, o1 #keep
         else:
             self.ch['u1'], self.ch['o1'] = u1, o1 #keep
 
-        u2 = None # IMPLEMENT THIS LINE
-        o2 = None # IMPLEMENT THIS LINE
+        u2 = self.param['theta2']@o1 + self.param['b2'] # IMPLEMENT THIS LINE
+        o2 = self.Tanh(u2) # IMPLEMENT THIS LINE
         self.ch['u2'], self.ch['o2'] = u2, o2 #keep
 
         return o2 #keep
@@ -192,11 +187,11 @@ class dlnet:
         '''
         # TODO: IMPLEMENT THIS METHOD
 
-        dLoss_o2 = None # IMPLEMENT THIS LINE
-        dLoss_u2 = None # IMPLEMENT THIS LINE
-        dLoss_theta2 = None # IMPLEMENT THIS LINE
-        dLoss_b2 = None # IMPLEMENT THIS LINE
-        dLoss_o1 = None # IMPLEMENT THIS LINE
+        dLoss_o2 = self.ch['o2'] - y # IMPLEMENT THIS LINE
+        dLoss_u2 = dLoss_o2 * (1-(self.Tanh(self.ch['u2'])**2)) # IMPLEMENT THIS LINE
+        dLoss_theta2 = dLoss_u2 * self.ch['o1'] # IMPLEMENT THIS LINE
+        dLoss_b2 = dLoss_u2 # IMPLEMENT THIS LINE
+        dLoss_o1 =  # IMPLEMENT THIS LINE
         
         if use_dropout:
             dLoss_u1 = None # IMPLEMENT THIS LINE
@@ -225,13 +220,13 @@ class dlnet:
         HINT: both self.change and self.param need to be updated for use_momentum=True and 
         only self.param needs to be updated when use_momentum=False
         '''
-        # TODO: IMPLEMENT THIS METHOD
 
         for layer in dLoss:
             if use_momentum:
-                continue # IMPLEMENT THIS LINE
+                self.change[layer] = self.momentum*self.change[layer] + dLoss[layer]
+                self.param[layer] -= self.lr * self.change[layer]
             else:
-                continue # IMPLEMENT THIS LINE
+                self.param[layer] -= self.lr * dLoss[layer]
 
     def backward(self, y, yh, use_dropout=True, use_momentum=False):
         '''
@@ -264,7 +259,15 @@ class dlnet:
                y 1xN: labels
                iter: scalar, number of epochs to iterate through
         '''
-        # TODO: IMPLEMENT THIS METHOD
+        self.nInit()
+        for i in range(0, iter):
+            yh = self.forward(x)
+            loss = self.nloss(y, yh)
+            dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1 = self.backward(y, yh)
+            if i % 1000 == 0: 
+                self.loss.append(loss)
+                print("Loss @ Iteration %i: %f" % (i, loss))
+        return
         
         raise NotImplementedError
        

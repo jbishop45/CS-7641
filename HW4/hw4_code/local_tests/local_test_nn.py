@@ -83,7 +83,6 @@ class TestNN(unittest.TestCase):
             [ 0.44723957, -1.22013677, -3.64712831,  0.93374086,  1.23490886, -1.06023574],
             [ 0.        , -2.07766524,  0.        , -0.2674055 ,  2.18968459, 2.09908396]
         ])
-
         self.assertAllClose(student, truth)
         print_success_message('test_dropout')
     

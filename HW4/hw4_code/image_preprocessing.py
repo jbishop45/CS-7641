@@ -12,8 +12,10 @@ def data_preprocessing(IMG_SIZE=32):
     '''
     # HINT :You can resize your images with tf.keras.layers.Resizing,
     # You can rescale pixel values with tf.keras.layers.Rescaling
-    
-    raise NotImplementedError
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Resizing(IMG_SIZE,IMG_SIZE))
+    model.add(tf.keras.layers.Rescaling(1./255))
+    return model
     
 
 def data_augmentation():
@@ -23,8 +25,11 @@ def data_augmentation():
     Second, add random rotation
     return tf.keras.Sequential object containing the above mentioned augmentation layers
     '''
-    
-    raise NotImplementedError
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.RandomFlip())
+    model.add(tf.keras.layers.RandomRotation(0.5))
+    #model.add(tf.keras.layers.RandomCrop())
+    return model
 
 
     
