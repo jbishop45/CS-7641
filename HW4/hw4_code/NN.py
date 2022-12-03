@@ -185,22 +185,28 @@ class dlnet:
         Output:
             dLoss: dictionary that maps layer names (strings) to gradients (numpy arrays)
         '''
-        # TODO: IMPLEMENT THIS METHOD
 
-        dLoss_o2 = self.ch['o2'] - y # IMPLEMENT THIS LINE
-        dLoss_u2 = dLoss_o2 * (1-(self.Tanh(self.ch['u2'])**2)) # IMPLEMENT THIS LINE
-        dLoss_theta2 = dLoss_u2 * self.ch['o1'] # IMPLEMENT THIS LINE
-        dLoss_b2 = dLoss_u2 # IMPLEMENT THIS LINE
-        dLoss_o1 =  # IMPLEMENT THIS LINE
+        dLoss_o2 = (yh - y)/y.shape[1] # dim=(1,331)    
+        #print('dLoss_o2.shape = ' + str(dLoss_o2.shape))
+        dLoss_u2 = dLoss_o2 * (1-(self.Tanh(self.ch['u2'])**2)) # dim=(1,331)
+        #print('dLoss_u2.shape = ' + str(dLoss_u2.shape))
+        dLoss_theta2 = dLoss_u2 @ self.ch['o1'].T # dim=(1,15)
+        #print('dLoss_theta2.shape = ' + str(dLoss_theta2.shape))
+        dLoss_b2 = np.sum(dLoss_u2) # dim=(1,1)
+        #print('dLoss_b2.shape = ' + str(dLoss_b2.shape))
+        dLoss_o1 = self.param['theta2'].T @ dLoss_u2  # dim=(15,331)
+        #print('dLoss_o1.shape = ' + str(dLoss_o1.shape))
         
         if use_dropout:
-            dLoss_u1 = None # IMPLEMENT THIS LINE
+            dLoss_u1 = self.ch['mask']/(1-self.dropout_prob) * dLoss_o1 * self.dL_Relu(self.alpha,self.ch['u1']) # dim=(15,331)
         else:
-            dLoss_u1 = None # IMPLEMENT THIS LINE
+            dLoss_u1 = dLoss_o1 * self.dL_Relu(self.alpha,self.ch['u1']) # dim=(15,331)
+        #print('dLoss_u1.shape = ' + str(dLoss_u1.shape))
 
-
-        dLoss_theta1 = None # IMPLEMENT THIS LINE
-        dLoss_b1 = None # IMPLEMENT THIS LINE
+        dLoss_theta1 = dLoss_u1 @ self.ch['X'].T # dim=(15,10)
+        #print('dLoss_theta1.shape = ' + str(dLoss_theta1.shape))
+        dLoss_b1 = np.sum(dLoss_u1,axis=1,keepdims=True) # dim=(15,1)
+        #print('dLoss_b1.shape = ' + str(dLoss_b1.shape))
         
         dLoss = {'theta1': dLoss_theta1, 'b1': dLoss_b1, 'theta2': dLoss_theta2, 'b2': dLoss_b2}
         return dLoss
@@ -242,9 +248,10 @@ class dlnet:
 
         Hint: make calls to compute_gradients and update_weights
         '''
-        # TODO: IMPLEMENT THIS METHOD
+        dLoss = self.compute_gradients(y,yh,use_dropout)
+        self.update_weights(dLoss,use_momentum=use_momentum)
         
-        raise NotImplementedError
+        return dLoss['theta2'], dLoss['b2'], dLoss['theta1'], dLoss['b1']
 
 
     def gradient_descent(self, x, y, iter = 60000, use_momentum=False, local_test=False):
@@ -263,13 +270,11 @@ class dlnet:
         for i in range(0, iter):
             yh = self.forward(x)
             loss = self.nloss(y, yh)
-            dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1 = self.backward(y, yh)
+            self.backward(y, yh, use_momentum=use_momentum)
+            self.loss.append(loss)
             if i % 1000 == 0: 
-                self.loss.append(loss)
-                print("Loss @ Iteration %i: %f" % (i, loss))
-        return
-        
-        raise NotImplementedError
+                print("Loss @ Iteration {}: {}".format(i, loss))
+        pass
        
     
     #bonus for undergraduate students 
@@ -302,9 +307,35 @@ class dlnet:
                     appending/printing out loss and y batch arrays
 
         '''
-        # TODO: IMPLEMENT THIS METHOD
-        
-        raise NotImplementedError
+        self.nInit()
+        yh = []
+        for _ in range(iter):
+            start_idx = self.iter*self.batch_size % x.shape[1] 
+            end_idx = (start_idx + self.batch_size) % x.shape[1]
+            if end_idx < start_idx:
+                x_batch = np.concatenate((x[:,start_idx:],x[:,:end_idx]),axis=1)
+                y_batch = np.concatenate((y[:,start_idx:],y[:,:end_idx]),axis=1)
+            else:
+                x_batch = x[:,start_idx:end_idx]
+                y_batch = y[:,start_idx:end_idx]
+
+            yh = self.forward(x_batch)
+            loss = self.nloss(y_batch, yh)
+            self.backward(y_batch, yh, use_momentum=use_momentum)
+            
+            if local_test:
+                self.loss.append(loss)
+                #print("Loss @ Iteration {}: {}".format(self.iter, loss))
+                self.batch_y.append(y_batch)
+                #print("Y Batch @ Iteration {}: {}".format(self.iter, loss))
+            else:
+                if self.iter % 1000 == 0: 
+                    print("Loss @ Iteration {}: {}".format(self.iter, loss))
+                    self.loss.append(loss)
+                    print("Loss @ Iteration {}: {}".format(self.iter, loss))
+                    self.batch_y.append(y_batch)
+            self.iter += 1
+        pass
 
 
     def predict(self, x): 

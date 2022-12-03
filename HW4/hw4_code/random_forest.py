@@ -18,7 +18,6 @@ class RandomForest(object):
 
     def _bootstrapping(self, num_training, num_features, random_seed = None):
         """
-        TODO:
         - Randomly select a sample dataset of size num_training with replacement from the original dataset.
         - Randomly select certain number of features (num_features denotes the total number of features in X,
           max_features denotes the percentage of features that are used to fit each decision tree) without replacement from the total number of features.
@@ -33,13 +32,13 @@ class RandomForest(object):
             np.random.seed(seed = random_seed)  # DO NOT REMOVE
 
         ############# Get Row Indices First - write your code below #####################
-        
+        row_idx = np.random.choice(num_training, num_training, replace=True)
         #################################################################################
 
         ############# Get Col Indices Second - write your code below ####################
-        
+        col_idx = np.random.choice(num_features, int(self.max_features*num_features), replace=False)
         ##################################################################################
-        raise NotImplementedError
+        return row_idx, col_idx
 
 
     def bootstrapping(self, num_training, num_features):
@@ -56,7 +55,6 @@ class RandomForest(object):
 
     def fit(self, X, y):
         """
-        TODO:
         Train decision trees using the bootstrapped datasets.
         Note that you need to use the row indices and column indices.
         X: NxD numpy array, where N is number
@@ -66,8 +64,13 @@ class RandomForest(object):
         Returns:
             None. Calling this function should train the decision trees held in self.decision_trees
         """
-
-        raise NotImplementedError
+        self.bootstrapping(X.shape[0],X.shape[1])
+        for i in range(self.n_estimators):
+            X_i = X[self.bootstraps_row_indices[i],:]
+            X_i = X_i[:,self.feature_indices[i]]
+            y_i = y[self.bootstraps_row_indices[i]]
+            self.decision_trees[i].fit(X_i,y_i)
+        pass
 
     def OOB_score(self, X, y):
         # helper function. You don't have to modify it
@@ -95,13 +98,23 @@ class RandomForest(object):
             None. Calling this function should simply display the aforementioned feature importance bar chart
         """
         plt.style.use('ggplot')
-
-        raise NotImplementedError
+        #for decision_tree_idx in range(self.n_estimators):
+        decision_tree_idx = 0
+        gini = self.decision_trees[decision_tree_idx].feature_importances_
+        labels = data_train.columns[self.feature_indices[decision_tree_idx]]
+        sorted_idx = np.argsort(gini)[::-1]
+        #plt.subplot(12,1,decision_tree_idx+1)
+        plt.bar(labels[sorted_idx],gini[sorted_idx])
+        plt.xticks(rotation='vertical')
+        plt.title('Gini Feature Importance for Tree {}'.format(decision_tree_idx))
+        #plt.subplots_adjust(bottom=10, top=11)
+        plt.show()
+        pass
 
     def select_hyperparameters(self):
         """
         Hyperparameter tuning Question
-        TODO: assign a value to n_estimators, max_depth, max_features
+            assign a value to n_estimators, max_depth, max_features
         Args:
             None
         Returns:
@@ -110,9 +123,8 @@ class RandomForest(object):
             max_features: a float between 0.0-1.0 (e.g 0.1)
         """
         # answers that consistently worked with both hidden and training/testing data
-        n_estimators = None
-        max_depth = None
-        max_features = None
+        n_estimators = 12
+        max_depth = 12
+        max_features = 1.0
 
-        raise NotImplementedError #remove this once values added
         return n_estimators, max_depth, max_features

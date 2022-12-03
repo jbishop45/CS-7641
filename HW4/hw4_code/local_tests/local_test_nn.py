@@ -233,7 +233,6 @@ class TestNN(unittest.TestCase):
         dLoss_theta2 = np.array([[0.11725097, 0.23069846, 0.05794615, 0.06345147, 0.08118983]])
         dLoss_b2 = np.array([[0.19071892]])
         truth = {'theta1': dLoss_theta1, 'b1': dLoss_b1, 'theta2': dLoss_theta2, 'b2': dLoss_b2}
-
         self.assertDictAllClose(student, truth)
         print_success_message('test_compute_gradients_withou_dropout')
 

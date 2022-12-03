@@ -62,5 +62,5 @@ class CNN(object):
         Use model.compile() to build your model.
         '''
         self.model = self.create_net()
-        self.model.compile(loss='categorical_crossentropy')
+        self.model.compile(loss='categorical_crossentropy',metrics='accuracy')
         return self.model
